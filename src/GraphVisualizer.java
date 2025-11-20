@@ -104,5 +104,6 @@ public class GraphVisualizer extends JFrame {
             GraphVisualizer visualizer = new GraphVisualizer(graph);
             visualizer.setVisible(true);
         });
+        print("halo dunia")
     }
 }
