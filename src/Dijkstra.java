@@ -1,7 +1,4 @@
-import java.util.Arrays;   // ← WAJIB
-import java.util.PriorityQueue;
-import java.util.Comparator;
-
+import java.util.Arrays;
 
 public class Dijkstra {
 
@@ -18,7 +15,7 @@ public class Dijkstra {
 
         int[] distance = new int[n];
         boolean[] visited = new boolean[n];
-        int[] parent = new int[n];  // <— tambahan
+        int[] parent = new int[n];
 
         Arrays.fill(distance, Integer.MAX_VALUE);
         Arrays.fill(parent, -1);
@@ -31,12 +28,10 @@ public class Dijkstra {
 
             for (int v = 0; v < n; v++) {
                 if (matrix[u][v] > 0 && !visited[v]) {
-
                     int newDist = distance[u] + matrix[u][v];
-
                     if (newDist < distance[v]) {
                         distance[v] = newDist;
-                        parent[v] = u;  // <— simpan jalur
+                        parent[v] = u;
                     }
                 }
             }
@@ -56,5 +51,16 @@ public class Dijkstra {
             }
         }
         return index;
+    }
+
+    public int getDistance(int[] parent, int start, int end) {
+        int total = 0;
+        int cur = end;
+
+        while (parent[cur] != -1) {
+            total += matrix[parent[cur]][cur];
+            cur = parent[cur];
+        }
+        return total;
     }
 }

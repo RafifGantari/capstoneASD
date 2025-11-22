@@ -1,6 +1,5 @@
 import javax.swing.*;
 import java.awt.*;
-import java.util.List;
 
 public class GraphVisualizer extends JFrame {
     private Graph graph;
@@ -35,10 +34,13 @@ public class GraphVisualizer extends JFrame {
 
         add(topPanel, BorderLayout.NORTH);
 
-        // ============= BOTTOM PANEL: display path sequence ============= //
-        JPanel bottomPanel = new JPanel(new FlowLayout());
+        // ============= BOTTOM PANEL: path + distance ============= //
+        JPanel bottomPanel = new JPanel(new GridLayout(2,1));
         JLabel pathLabel = new JLabel("Path: -");
+        JLabel distanceLabel = new JLabel("Total Distance: -");
+
         bottomPanel.add(pathLabel);
+        bottomPanel.add(distanceLabel);
 
         add(bottomPanel, BorderLayout.SOUTH);
 
@@ -47,19 +49,22 @@ public class GraphVisualizer extends JFrame {
             int start = startBox.getSelectedIndex();
             int end = endBox.getSelectedIndex();
 
-            Dijkstra dijkstra = new Dijkstra(graph.getAdjacencyMatrix(), graph.getLabel());
-            dijkstra.compute(start);
+            Dijkstra dijkstra = new Dijkstra(
+                    graph.getAdjacencyMatrix(),
+                    graph.getLabel()
+            );
 
-            int[] parent = dijkstra.getParent();
-            int distance = dijkstra.getDistance(end);
+            int[] parent = dijkstra.shortestPath(start, end);
+            int distance = dijkstra.getDistance(parent, start, end);
 
-            // set highlight path to graphPanel
+            // highlight path
             graphPanel.setShortestPath(parent, start, end);
             graphPanel.setTotalDistance(distance);
 
-            // Generate readable path text
+            // readable path text
             String pathText = buildPathString(parent, start, end, graph.getLabel());
             pathLabel.setText("Path: " + pathText);
+            distanceLabel.setText("Total Distance: " + distance);
         });
 
         pack();
@@ -104,6 +109,5 @@ public class GraphVisualizer extends JFrame {
             GraphVisualizer visualizer = new GraphVisualizer(graph);
             visualizer.setVisible(true);
         });
-        print("halo dunia")
     }
 }
