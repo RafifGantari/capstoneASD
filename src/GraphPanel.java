@@ -8,38 +8,80 @@ class GraphPanel extends JPanel {
     private Graph graph;
     private Node draggedNode = null;
 
-    // menyimpan edge yang merupakan bagian dari shortest path
+    // shortest path edges
     private java.util.Set<String> shortestEdges = new java.util.HashSet<>();
 
-    // total jarak shortest path
+    // shortest path as node sequence
+    private java.util.List<Integer> shortestPathList = new java.util.ArrayList<>();
+    private java.util.List<Integer> animatedNodes = new java.util.ArrayList<>();
+
+    // animation control
+    private Timer animationTimer;
+    private int animIndex = 0;
+
+    // total distance text
     private int totalDistance = -1;
 
-    // menyimpan node start dan end agar bisa diwarnai merah & ditampilkan
+    // start & end nodes
     private Integer startNode = null;
     private Integer endNode = null;
 
+
+    // ==============================================
+    // Called by button from GraphVisualizer
+    // ==============================================
     public void setShortestPath(int[] parent, int start, int end) {
+
         shortestEdges.clear();
+        shortestPathList.clear();
+        animatedNodes.clear();
+        animIndex = 0;
+
         this.startNode = start;
         this.endNode = end;
 
+        // build path order
         int cur = end;
-        while (parent[cur] != -1) {
-            String key = parent[cur] + "-" + cur;
-            shortestEdges.add(key);
+        while (cur != -1) {
+            shortestPathList.add(cur);
             cur = parent[cur];
         }
+        java.util.Collections.reverse(shortestPathList);
 
+        // build edge key list
+        for (int i = 0; i < shortestPathList.size() - 1; i++) {
+            String key = shortestPathList.get(i) + "-" + shortestPathList.get(i + 1);
+            shortestEdges.add(key);
+        }
+
+        // start animation
+        animationTimer = new Timer(600, e -> {
+            if (animIndex < shortestPathList.size()) {
+                animatedNodes.add(shortestPathList.get(animIndex));
+                animIndex++;
+                repaint();
+            } else {
+                animationTimer.stop();
+            }
+        });
+
+        animationTimer.start();
         repaint();
     }
+
 
     public void setTotalDistance(int dist) {
         this.totalDistance = dist;
         repaint();
     }
 
+
+    // ==============================================
+    // Constructor
+    // ==============================================
     public GraphPanel(Graph graph) {
         this.graph = graph;
+
         setPreferredSize(new Dimension(800, 600));
         setBackground(Color.WHITE);
 
@@ -60,9 +102,7 @@ class GraphPanel extends JPanel {
             }
 
             @Override
-            public void mouseReleased(MouseEvent e) {
-                draggedNode = null;
-            }
+            public void mouseReleased(MouseEvent e) { draggedNode = null; }
 
             @Override
             public void mouseDragged(MouseEvent e) {
@@ -78,6 +118,8 @@ class GraphPanel extends JPanel {
         addMouseMotionListener(mouseHandler);
     }
 
+
+    // ==============================================
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -86,13 +128,15 @@ class GraphPanel extends JPanel {
 
         // Draw edges
         for (Edge edge : graph.getEdges()) {
-
             Node source = edge.getSource();
             Node target = edge.getTarget();
 
-            String key = source.getId() + "-" + target.getId();
+            boolean edgeActive =
+                animatedNodes.contains(source.getId()) &&
+                animatedNodes.contains(target.getId()) &&
+                shortestEdges.contains(source.getId() + "-" + target.getId());
 
-            if (shortestEdges.contains(key)) {
+            if (edgeActive) {
                 g2d.setColor(Color.RED);
                 g2d.setStroke(new BasicStroke(4));
             } else {
@@ -103,7 +147,7 @@ class GraphPanel extends JPanel {
             g2d.drawLine(source.getX(), source.getY(), target.getX(), target.getY());
             drawArrow(g2d, source.getX(), source.getY(), target.getX(), target.getY());
 
-            // weight
+            // weight text
             int midX = (source.getX() + target.getX()) / 2;
             int midY = (source.getY() + target.getY()) / 2;
             g2d.setColor(Color.RED);
@@ -117,11 +161,9 @@ class GraphPanel extends JPanel {
         for (Node node : graph.getNodes()) {
 
             Color nodeColor = new Color(100, 150, 255);
+            boolean highlighted = animatedNodes.contains(node.getId());
 
-            // start & end jadi merah
-            if (startNode != null && (node.getId() == startNode || node.getId() == endNode)) {
-                nodeColor = Color.RED;
-            }
+            if (highlighted) nodeColor = Color.RED;
 
             g2d.setColor(nodeColor);
             g2d.fillOval(node.getX() - node.getRadius(),
@@ -136,7 +178,7 @@ class GraphPanel extends JPanel {
                     node.getRadius() * 2,
                     node.getRadius() * 2);
 
-            // label
+            // label text
             g2d.setColor(Color.WHITE);
             g2d.setFont(new Font("Arial", Font.BOLD, 16));
             String label = graph.getLabel()[node.getId()];
@@ -146,21 +188,20 @@ class GraphPanel extends JPanel {
             g2d.drawString(label, labelX, labelY);
         }
 
-        // ===============================
-        //   DISPLAY TOTAL DISTANCE TEXT
-        // ===============================
+        // Draw total distance
         if (totalDistance >= 0 && startNode != null && endNode != null) {
             String startLabel = graph.getLabel()[startNode];
             String endLabel = graph.getLabel()[endNode];
 
-            String text = "Total distance: " + totalDistance + " from " + startLabel + " to " + endLabel;
-
             g2d.setColor(Color.BLACK);
             g2d.setFont(new Font("Arial", Font.BOLD, 18));
-            g2d.drawString(text, 20, getHeight() - 20);
+            g2d.drawString("Total distance: " + totalDistance +
+                    " from " + startLabel + " to " + endLabel, 20, getHeight() - 20);
         }
     }
 
+
+    // arrow drawing
     private void drawArrow(Graphics2D g2d, int x1, int y1, int x2, int y2) {
         double angle = Math.atan2(y2 - y1, x2 - x1);
         int arrowSize = 10;
